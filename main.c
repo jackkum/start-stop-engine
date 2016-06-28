@@ -5,26 +5,95 @@
 #include <util/delay.h>
 #include <avr/sleep.h>
 
-#define MODE_OFF 0
-#define MODE_ACC 1
-#define MODE_IGN 2
-#define MODE_START 3
+#define LINE        PORTD
+#define ACC         PD5
+#define IG          PD6
+#define STARTER     PD7
+
+#define MODE_OFF    0
+#define MODE_ACC    1
+#define MODE_IG     2
+#define MODE_START  3
 #define MODE_MUFFLE 4
 
-#define ACC_ON          (PORTD |=  (1 << PD5))
-#define ACC_OFF         (PORTD &= ~(1 << PD5))
-
-#define IGN_ON          (PORTD |=  (1 << PD6))
-#define IGN_OFF         (PORTD &= ~(1 << PD6))
-
-#define STARTER_ON      (PORTD |=  (1 << PD7))
-#define STARTER_OFF     (PORTD &= ~(1 << PD7))
+#define ON(b)  do { LINE |=  (1 << b); } while(0)
+#define OFF(b) do { LINE &= ~(1 << b); } while(0)
 
 volatile uint8_t mode   = 0x00;
 volatile uint8_t wakeup = 0x00;
 
-void trigger(void);
-uint8_t isPushed(uint8_t l);
+/**
+ * Check button is pushed
+ */
+uint8_t isPushed(uint8_t l){
+    // is pushed
+    if((PIND & (1<<l)) == 0){
+        // wait
+         _delay_ms(50);
+        // check again
+        if((PIND & (1<<l)) == 0){
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * check mode
+ */
+void trigger(void) {
+
+    switch(mode){
+
+        case MODE_START:
+
+            if(isPushed(PD4)){
+                mode = 0;
+                OFF(ACC);
+                OFF(IG);
+                OFF(STARTER);
+                return;
+            }
+        break;
+
+        // rotate key from IG to Starter or off
+        case MODE_IG:
+            if(isPushed(PD4)){
+                ON(ACC);
+                ON(IG);
+                ON(STARTER);
+                while((PIND & (1<<PD2)) == 0);
+                OFF(STARTER);
+
+                // TODO: check tahometr sensor the next mode
+                mode++;
+            } else {
+                mode = 0;
+                OFF(ACC);
+                OFF(IG);
+                OFF(STARTER);
+                return;
+            }
+
+        break;
+
+        // rotate key from ACC to IG
+        case MODE_ACC:
+            mode++;
+            ON(ACC);
+            ON(IG);
+        break;
+
+        // rotate key from off to ACC
+        case MODE_OFF:
+            mode++;
+            ON(ACC);
+            OFF(IG);
+        break;
+
+    }
+}
 
 /**
  * Initialize IO and timers
@@ -139,75 +208,3 @@ ISR(TIMER0_OVF_vect) {
     }
 }
 
-/**
- * Check button is pushed
- */
-uint8_t isPushed(uint8_t l){
-    // is pushed
-    if((PIND & (1<<l)) == 0){
-        // wait
-         _delay_ms(50);
-        // check again
-        if((PIND & (1<<l)) == 0){
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
-/**
- * check mode
- */
-void trigger() {
-
-    switch(mode){
-
-        case MODE_START:
-
-            if(isPushed(PD4)){
-                mode = 0;
-                ACC_OFF;
-                IGN_OFF;
-                STARTER_OFF;
-                return;
-            }
-        break;
-
-        // rotate key from IGN to Starter or off
-        case MODE_IGN:
-            if(isPushed(PD4)){
-                ACC_ON;
-                IGN_ON;
-                STARTER_ON;
-                while((PIND & (1<<PD2)) == 0);
-                STARTER_OFF;
-
-                // TODO: check tahometr sensor the next mode
-                mode++;
-            } else {
-                mode = 0;
-                ACC_OFF;
-                IGN_OFF;
-                STARTER_OFF;
-                return;
-            }
-
-        break;
-
-        // rotate key from ACC to IGN
-        case MODE_ACC:
-            mode++;
-            ACC_ON;
-            IGN_ON;
-        break;
-
-        // rotate key from off to ACC
-        case MODE_OFF:
-            mode++;
-            ACC_ON;
-            IGN_OFF;
-        break;
-
-    }
-}
