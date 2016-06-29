@@ -41,7 +41,7 @@ uint8_t wait(void){
 /**
  * Check pushed pin
  */
-inline uint8_t _pushed(uint8_t bit){
+uint8_t pushed(uint8_t bit){
     return (PIN & (1<<bit)) == 0;
 }
 
@@ -49,7 +49,7 @@ inline uint8_t _pushed(uint8_t bit){
  * Check button is pushed
  */
 uint8_t isPushed(uint8_t bit){
-    return _pushed(bit) && wait() && _pushed(bit);
+    return pushed(bit) && wait() && pushed(bit);
 }
 
 /**
@@ -61,10 +61,11 @@ void trigger(void) {
 
         case MODE_START:
             if(isPushed(BREAK)){
-                mode = 0;
+                mode = MODE_OFF;
                 OFF(ACC);
                 OFF(IG);
                 OFF(STARTER);
+                // avoid falling to the MODE_OFF
                 return;
             }
         break;
@@ -75,13 +76,13 @@ void trigger(void) {
                 ON(ACC);
                 ON(IG);
                 ON(STARTER);
-                while((PIN & (1<<BUTTON)) == 0);
+                while(pushed(BUTTON));
                 OFF(STARTER);
 
                 // TODO: check tahometr sensor the next mode
-                mode++;
+                mode = MODE_START;
             } else {
-                mode = 0;
+                mode = MODE_OFF;
                 OFF(ACC);
                 OFF(IG);
                 OFF(STARTER);
@@ -92,14 +93,14 @@ void trigger(void) {
 
         // rotate key from ACC to IG
         case MODE_ACC:
-            mode++;
+            mode = MODE_IG;
             ON(ACC);
             ON(IG);
         break;
 
         // rotate key from off to ACC
         case MODE_OFF:
-            mode++;
+            mode = MODE_ACC;
             ON(ACC);
             OFF(IG);
         break;
@@ -198,7 +199,7 @@ int main(void) {
             // trigger mode change
             trigger();
             // until button is not released
-            while((PIN & (1<<BUTTON)) == 0);
+            while(pushed(BUTTON));
         }
     }
 
