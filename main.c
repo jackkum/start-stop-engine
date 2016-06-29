@@ -22,6 +22,8 @@
 #define MODE_START  3
 #define MODE_MUFFLE 4
 
+#define DELAY 50
+
 #define ON(b)  do { PORT |=  (1 << b); } while(0)
 #define OFF(b) do { PORT &= ~(1 << b); } while(0)
 
@@ -29,20 +31,25 @@ volatile uint8_t mode   = 0x00;
 volatile uint8_t wakeup = 0x00;
 
 /**
+ * just wait
+ */
+uint8_t wait(void){
+    _delay_ms(DELAY);
+    return 1;
+}
+
+/**
+ * Check pushed pin
+ */
+inline uint8_t _pushed(uint8_t bit){
+    return (PIN & (1<<bit)) == 0;
+}
+
+/**
  * Check button is pushed
  */
-uint8_t isPushed(uint8_t l){
-    // is pushed
-    if((PIN & (1<<l)) == 0){
-        // wait
-         _delay_ms(50);
-        // check again
-        if((PIN & (1<<l)) == 0){
-            return 1;
-        }
-    }
-
-    return 0;
+uint8_t isPushed(uint8_t bit){
+    return _pushed(bit) && wait() && _pushed(bit);
 }
 
 /**
