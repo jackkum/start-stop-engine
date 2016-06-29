@@ -1,3 +1,12 @@
+/***
+ *
+ * Start/Stop engine button
+ *
+ * MCU: ATMega328p
+ *
+ **/
+
+// CPU frequency for delay.h
 #define F_CPU 8000000UL
 
 #include <avr/io.h>
@@ -5,10 +14,12 @@
 #include <util/delay.h>
 #include <avr/sleep.h>
 
+// IO
 #define PORT        PORTD
 #define DDR         DDRD
 #define PIN         PIND
 
+// PIN
 #define BUTTON      PD2
 #define LED         PD3
 #define BREAK       PD4
@@ -16,18 +27,22 @@
 #define IG          PD6
 #define STARTER     PD7
 
-#define MODE_OFF    0
-#define MODE_ACC    1
-#define MODE_IG     2
-#define MODE_START  3
-#define MODE_MUFFLE 4
+// mode (key position)
+typedef enum {
+    MODE_OFF,
+    MODE_ACC,
+    MODE_IG,
+    MODE_START
+} MODE;
 
-#define DELAY 50
+// delay between measurement
+#define DELAY 100
 
+// io management
 #define ON(b)  do { PORT |=  (1 << b); } while(0)
 #define OFF(b) do { PORT &= ~(1 << b); } while(0)
 
-volatile uint8_t mode   = 0x00;
+volatile MODE mode      = MODE_OFF;
 volatile uint8_t wakeup = 0x00;
 
 /**
@@ -189,7 +204,7 @@ int main(void) {
     while(1){
 
         // mode off and wake up timeout is empty
-        if(mode == 0 && wakeup == 0){
+        if(mode == MODE_OFF && wakeup == 0){
             // sleep mcu
             sleep();
         }
