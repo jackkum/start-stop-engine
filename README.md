@@ -1,2 +1,8 @@
 # start-stop-engine
-Arduino Pro Min (ATMega328p) Start/Stop Engine
+Arduino Pro Nano (ATMega328p) Start/Stop Engine
+
+## compile
+make build
+
+## programm
+make programm
