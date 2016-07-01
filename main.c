@@ -94,7 +94,7 @@ void trigger(void) {
                 while(pushed(BUTTON));
                 OFF(STARTER);
 
-                // TODO: check tahometr sensor the next mode
+                // TODO: check tachometer sensor the next mode
                 mode = MODE_START;
             } else {
                 mode = MODE_OFF;
